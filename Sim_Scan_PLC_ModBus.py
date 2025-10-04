@@ -22,23 +22,31 @@ utenti = {"Simone Burgio":  {"id": "0F00B18F42", "out": OUTPUT_1},
 # ----------  DEFINIZIONE MEMORIE DI PROCESSO 
 pii = {"status1" : False,
        "status2" : False,
-       "status3" : False}
-piq = {"lock1" : False,
-       "lock2" : False,
-       "lock3" : False,
-       "led"   : False}
+       "status3" : False,
+       "s1"      : False}
+piq = {"lock1"   : False,
+       "lock2"   : False,
+       "lock3"   : False,
+       "led1"     : False}
+pc  = {"lock_num": 1}
 
 # -----------------------------------
 # ---------- SEZIONI LOGICA PROGRAMMA 
 def pou1(pii, piq):
-     if False in pii.values():
+     #Accendi il led se una delle serrature è aperta
+     if not pii["status1"] or not pii["status2"] or not pii["status3"]:
           print("LED ACCESO")
           piq["led"] = True
      else:
            piq["led"] = False
 
-
+def pou2(piq,pc):    
+     if pc["lock_num"] != 0:
+          piq[f"led{pc["lock_num"]}"] = True
+          #time.sleep(0.2)
+          #piq["led"] = False
           
+         #f"lock{pc["lock_num"]}" 
 
 # --------------------------
 # ---------- TASK PRINCIPALE 
@@ -61,6 +69,7 @@ def main_task():
                     pii["status1"] = (register_value & 1) != 0
                     pii["status2"] = (register_value & 2) != 0
                     pii["status3"] = (register_value & 4) != 0
+                    pii["s1"]      = (register_value & 8) != 0
         
             except Exception as e:
                 print(f"Si è verificato un errore durante la lettura: {e}") 
@@ -68,16 +77,18 @@ def main_task():
             # --- 2: ESECUZIONE LOGICA
 
             pou1(pii,piq)
+            pou2(piq,pc)
 
 
 
             # --- 3: AGGIORNAMENTO USCITE
 
-            client.write_coil(OUTPUT_4, piq["led"])
+            client.write_coil(OUTPUT_1, piq["lock1"])
+            client.write_coil(OUTPUT_2, piq["lock2"])
+            client.write_coil(OUTPUT_3, piq["lock3"])
+            client.write_coil(OUTPUT_4, piq["led1"])
 
             time.sleep(0.1)
-
-
 
 if __name__ == "__main__":
      main_task()
