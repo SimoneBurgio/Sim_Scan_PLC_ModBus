@@ -1,6 +1,7 @@
 import time
 import threading
 from pymodbus.client import ModbusTcpClient as MBClient
+from timers import TON
 
 #------------------------
 # -------- CONFIGURAZIONE 
@@ -27,8 +28,12 @@ pii = {"status1" : False,
 piq = {"lock1"   : False,
        "lock2"   : False,
        "lock3"   : False,
-       "led1"     : False}
+       "led1"    : False}
+mem = {"step1"   : False,
+       "step2"   : False,
+       "step3"   : False}
 pc  = {"lock_num": 1}
+
 
 # -----------------------------------
 # ---------- SEZIONI LOGICA PROGRAMMA 
@@ -43,10 +48,12 @@ def pou1(pii, piq):
 def pou2(piq,pc):    
      if pc["lock_num"] != 0:
           piq[f"led{pc["lock_num"]}"] = True
+          mem["step1"] = True
           #time.sleep(0.2)
           #piq["led"] = False
           
          #f"lock{pc["lock_num"]}" 
+
 
 # --------------------------
 # ---------- TASK PRINCIPALE 
@@ -78,8 +85,6 @@ def main_task():
 
             pou1(pii,piq)
             pou2(piq,pc)
-
-
 
             # --- 3: AGGIORNAMENTO USCITE
 
