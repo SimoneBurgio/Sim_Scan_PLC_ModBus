@@ -29,10 +29,11 @@ piq = {"lock1"   : False,
        "lock2"   : False,
        "lock3"   : False,
        "led1"    : False}
-mem = {"step1"   : False,
-       "step2"   : False,
-       "step3"   : False}
+step = 0
 pc  = {"lock_num": 1}
+
+t1 = TON(preset_time=1)
+t2 = TON(preset_time=0.1)
 
 
 # -----------------------------------
@@ -41,20 +42,34 @@ def pou1(pii, piq):
      #Accendi il led se una delle serrature è aperta
      if not pii["status1"] or not pii["status2"] or not pii["status3"]:
           print("LED ACCESO")
-          piq["led"] = True
+          piq["led1"] = True
      else:
-           piq["led"] = False
+           piq["led1"] = False
 
-def pou2(piq,pc):    
-     if pc["lock_num"] != 0:
-          piq[f"led{pc["lock_num"]}"] = True
-          mem["step1"] = True
-          #time.sleep(0.2)
-          #piq["led"] = False
-          
-         #f"lock{pc["lock_num"]}" 
-
-
+def pou2(pii, piq, pc):
+    global step
+    
+    if step == 0:
+        t1(False)  # Reset timer 1
+        t2(False)  # Reset timer 2       
+        if pii["s1"]:
+            step = 1
+    
+    elif step == 1:
+        t2(False)  # Reset timer non in uso
+        if t1(True):
+            piq["lock1"] = True
+            step = 2
+    
+    elif step == 2:
+        t1(False)  # Reset timer non in uso
+        
+        if t2(True):
+            piq["lock1"] = False
+            step = 0
+              
+         
+         
 # --------------------------
 # ---------- TASK PRINCIPALE 
 
@@ -84,7 +99,7 @@ def main_task():
             # --- 2: ESECUZIONE LOGICA
 
             pou1(pii,piq)
-            pou2(piq,pc)
+            pou2(pii,piq,pc)
 
             # --- 3: AGGIORNAMENTO USCITE
 
