@@ -29,8 +29,9 @@ piq = {"lock1"   : False,
        "lock2"   : False,
        "lock3"   : False,
        "led1"    : False}
-step = 0
-pc  = {"lock_num": 0}
+
+step = 0                # Step ciclo serratura
+pc  = {"lock_num": 0}   # Numero serratura da aprire
 
 t1 = TON(preset_time=1)
 t2 = TON(preset_time=0.1)
@@ -38,6 +39,9 @@ t2 = TON(preset_time=0.1)
 
 # -----------------------------------
 # ---------- SEZIONI LOGICA PROGRAMMA 
+
+
+#LOGICA ACCENSIONE LED
 def pou1(pii, piq):
      #Accendi il led se una delle serrature è aperta
      if not pii["status1"] or not pii["status2"] or not pii["status3"]:
@@ -45,8 +49,9 @@ def pou1(pii, piq):
      else:
            piq["led1"] = False
 
-def pou2(pii, piq, pc):
 
+# LOGICA APERTURA SERRATURA
+def pou2(pii, piq, pc):
     global step
     if step == 0:
         t1(False)  # Reset timer 1
@@ -67,6 +72,7 @@ def pou2(pii, piq, pc):
             step = 0
 
 
+# LETTURA BADGE E SCELTA SERRATURA DA APRIRE
 def lettura_badge(client, pc, utenti):
     while True:
         badge_id = input("Passa il badge o scrivi manualmente: ")
@@ -93,6 +99,7 @@ def main_task():
         else:
             print(f"Connessione con {PLC_IP} eseguita")
 
+            # START FUNZIONE PARALLELA PER LETTURA BADGE
             scan_thread = threading.Thread(target=lettura_badge, args=(client,pc,utenti,))
             scan_thread.start()
         
