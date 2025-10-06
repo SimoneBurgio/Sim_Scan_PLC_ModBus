@@ -14,9 +14,9 @@ OUTPUT_1, OUTPUT_2, OUTPUT_3, OUTPUT_4 = 32768, 32769, 32770, 32771
 #Indirizzi Modbus 4DO_PN_2A
 OUTPUT_5, OUTPUT_6, OUTPUT_7, OUTPUT_8 = 32780, 32781, 32782, 32783
 
-utenti = {"Simone Burgio":  {"id": "0F00B18F42", "out": OUTPUT_1},
-          "Mario Roxy":     {"id": "909ABF4F", "out": OUTPUT_2 },
-          "Ganzo Frozo":    {"id": "AD87B1AB", "out": OUTPUT_3}
+utenti = {"Simone Burgio": {"id": "0F00B18F42", "pc_code" : 1},
+          "Mario Roxy": {"id": "909ABF4F", "pc_code" : 2},
+          "Ganzo Frozo": {"id": "AD87B1AB", "pc_code" : 3}
           }
 
 # -------------------------------------------
@@ -30,7 +30,7 @@ piq = {"lock1"   : False,
        "lock3"   : False,
        "led1"    : False}
 step = 0
-pc  = {"lock_num": 1}
+pc  = {"lock_num": 0}
 
 t1 = TON(preset_time=1)
 t2 = TON(preset_time=0.1)
@@ -41,32 +41,44 @@ t2 = TON(preset_time=0.1)
 def pou1(pii, piq):
      #Accendi il led se una delle serrature è aperta
      if not pii["status1"] or not pii["status2"] or not pii["status3"]:
-          print("LED ACCESO")
           piq["led1"] = True
      else:
            piq["led1"] = False
 
 def pou2(pii, piq, pc):
+
     global step
-    
     if step == 0:
         t1(False)  # Reset timer 1
         t2(False)  # Reset timer 2       
-        if pii["s1"]:
+        if pc["lock_num"] != 0 and pii[f"status{pc["lock_num"]}"]:
             step = 1
     
     elif step == 1:
-        t2(False)  # Reset timer non in uso
         if t1(True):
-            piq["lock1"] = True
+            piq[f"lock{pc["lock_num"]}"] = True
             step = 2
     
     elif step == 2:
-        t1(False)  # Reset timer non in uso
         
         if t2(True):
-            piq["lock1"] = False
+            piq[f"lock{pc["lock_num"]}"] = False
+            pc["lock_num"] = 0
             step = 0
+
+
+def lettura_badge(client, pc, utenti):
+    while True:
+        badge_id = input("Passa il badge o scrivi manualmente: ")
+        
+        if step == 0:
+            for nome, id in utenti.items():
+                if badge_id == id["id"]:
+                    pc["lock_num"] = id["pc_code"]
+            print(pc["lock_num"])   
+            print(f"Benvenuto {nome}")
+        time.sleep(1)
+
               
          
          
@@ -80,7 +92,10 @@ def main_task():
             print(f"ERRORE: Connessione fallita con {PLC_IP}")
         else:
             print(f"Connessione con {PLC_IP} eseguita")
-    
+
+            scan_thread = threading.Thread(target=lettura_badge, args=(client,pc,utenti,))
+            scan_thread.start()
+        
         while True:
 
             # --- 1: LETTURA INGRESSI E SALVATAGGIO IN MEMORIA
