@@ -33,7 +33,7 @@ piq = {"lock1"   : False,
 step = 0                # Step ciclo serratura
 pc  = {"lock_num": 0}   # Numero serratura da aprire
 
-t1 = TON(preset_time=1)
+t1 = TON(preset_time=0.2)
 t2 = TON(preset_time=0.1)
 
 
@@ -53,36 +53,45 @@ def pou1(pii, piq):
 # LOGICA APERTURA SERRATURA
 def pou2(pii, piq, pc):
     global step
-    if step == 0:
-        t1(False)  # Reset timer 1
-        t2(False)  # Reset timer 2       
-        if pc["lock_num"] != 0 and pii[f"status{pc["lock_num"]}"]:
-            step = 1
-    
-    elif step == 1:
-        if t1(True):
-            piq[f"lock{pc["lock_num"]}"] = True
-            step = 2
-    
-    elif step == 2:
+    match step:
+        case 0:
+            t1(False)  # Reset timer 1
+            t2(False)  # Reset timer 2       
+            if pc["lock_num"] != 0 and pii[f"status{pc["lock_num"]}"]:
+                step = 1
         
-        if t2(True):
-            piq[f"lock{pc["lock_num"]}"] = False
-            pc["lock_num"] = 0
-            step = 0
-
+        case 1:
+            if t1(True):
+                piq[f"lock{pc["lock_num"]}"] = True
+                step = 2
+        
+        case 2:
+            
+            if t2(True):
+                piq[f"lock{pc["lock_num"]}"] = False
+                step = 3
+        
+        case 3:
+            if pii[f"status{pc["lock_num"]}"]:
+                pc["lock_num"] = 0
+                step = 0
+            
 
 # LETTURA BADGE E SCELTA SERRATURA DA APRIRE
 def lettura_badge(client, pc, utenti):
     while True:
-        badge_id = input("Passa il badge o scrivi manualmente: ")
-        
+        utente_trovato = False
         if step == 0:
+            badge_id = input("Passa il badge o scrivi manualmente: ")
             for nome, id in utenti.items():
                 if badge_id == id["id"]:
                     pc["lock_num"] = id["pc_code"]
-            print(pc["lock_num"])   
-            print(f"Benvenuto {nome}")
+                    print(pc["lock_num"])   
+                    print(f"Benvenuto {nome}")
+                    utente_trovato = True
+                    break
+            if utente_trovato == False:
+                print("Badge non riconosciuto")        
         time.sleep(1)
 
               
@@ -130,7 +139,7 @@ def main_task():
             client.write_coil(OUTPUT_3, piq["lock3"])
             client.write_coil(OUTPUT_4, piq["led1"])
 
-            time.sleep(0.1)
+            time.sleep(0.01)
 
 if __name__ == "__main__":
      main_task()
